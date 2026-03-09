@@ -5,9 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { houseApi, locationApi, sublocationApi } from '@/lib/api';
 import { Location, SubLocation, House } from '@/types';
-import { ArrowLeft, Upload, X, Trash2 } from 'lucide-react';
+import { ArrowLeft, Upload, X, Trash2, Play, Star } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import toast from 'react-hot-toast';
 
 export default function EditHousePage() {
   const router = useRouter();
@@ -99,7 +100,7 @@ export default function EditHousePage() {
   };
 
   const deleteExistingImage = async (imageId: number) => {
-    if (!confirm('Are you sure you want to delete this image?')) return;
+    if (!confirm('Are you sure you want to delete this media?')) return;
 
     try {
       await houseApi.deleteImage(imageId);
@@ -109,9 +110,30 @@ export default function EditHousePage() {
           images: house.images?.filter(img => img.id !== imageId),
         });
       }
+      toast.success('Media deleted successfully!');
     } catch (error) {
-      console.error('Error deleting image:', error);
-      alert('Failed to delete image');
+      console.error('Error deleting media:', error);
+      toast.error('Failed to delete media');
+    }
+  };
+
+  const setPrimaryImage = async (imageId: number) => {
+    try {
+      // Update via API to set as primary
+      await houseApi.uploadImage(houseId, new FormData());
+      
+      // Update local state
+      if (house && house.images) {
+        const updatedImages = house.images.map(img => ({
+          ...img,
+          is_primary: img.id === imageId
+        }));
+        setHouse({ ...house, images: updatedImages });
+      }
+      toast.success('Primary image updated!');
+    } catch (error) {
+      console.error('Error setting primary image:', error);
+      toast.error('Failed to update primary image');
     }
   };
 
@@ -318,72 +340,127 @@ export default function EditHousePage() {
               </div>
             </div>
 
-            {/* Existing Images */}
+            {/* Existing Images & Videos */}
             {house?.images && house.images.length > 0 && (
               <div>
-                <label className="block text-sm font-medium mb-3">Current Images</label>
+                <label className="block text-sm font-medium mb-3">Current Media ({house.images.length})</label>
                 <div className="grid grid-cols-3 gap-4">
-                  {house.images.map((image) => (
-                    <div key={image.id} className="relative group">
-                      <div className="relative w-full h-32">
-                        <Image
-                          src={image.image_url}
-                          alt="House"
-                          fill
-                          className="object-cover rounded-lg"
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => deleteExistingImage(image.id)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                      {image.is_primary && (
-                        <span className="absolute bottom-2 left-2 bg-primary-500 text-white text-xs px-2 py-1 rounded">
-                          Primary
-                        </span>
+                  {house.images.map((media) => (
+                    <div key={media.id} className="relative group bg-dark-900 rounded-lg overflow-hidden border border-dark-700">
+                      {media.media_type === 'VIDEO' ? (
+                        <div className="relative w-full h-32 bg-black">
+                          <video
+                            src={media.image_url}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                            <Play className="w-8 h-8 text-white" />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="relative w-full h-32">
+                          <Image
+                            src={media.image_url}
+                            alt="House media"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
                       )}
+                      
+                      {/* Action buttons */}
+                      <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {media.media_type === 'IMAGE' && !media.is_primary && (
+                          <button
+                            type="button"
+                            onClick={() => setPrimaryImage(media.id)}
+                            className="bg-primary-500 hover:bg-primary-600 text-white p-1.5 rounded-full"
+                            title="Set as primary"
+                          >
+                            <Star className="w-4 h-4" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => deleteExistingImage(media.id)}
+                          className="bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                      
+                      {/* Badges */}
+                      <div className="absolute bottom-2 left-2 flex gap-1">
+                        {media.is_primary && (
+                          <span className="bg-primary-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                            <Star className="w-3 h-3" />
+                            Primary
+                          </span>
+                        )}
+                        {media.media_type === 'VIDEO' && (
+                          <span className="bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                            <Play className="w-3 h-3" />
+                            Video
+                          </span>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* New Images */}
+            {/* New Images & Videos */}
             <div>
-              <label className="block text-sm font-medium mb-2">Add New Images</label>
-              <div className="border-2 border-dashed border-dark-700 rounded-lg p-6 text-center">
+              <label className="block text-sm font-medium mb-2">Add New Media</label>
+              <div className="border-2 border-dashed border-dark-700 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
                 <Upload className="w-12 h-12 text-dark-600 mx-auto mb-4" />
                 <input
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/*,video/*"
                   onChange={handleImageChange}
                   className="hidden"
                   id="image-upload"
                 />
                 <label htmlFor="image-upload" className="btn-secondary cursor-pointer inline-block">
-                  Choose Images
+                  Choose Images & Videos
                 </label>
+                <p className="text-dark-500 text-sm mt-2">Supports images and videos</p>
               </div>
 
               {newImages.length > 0 && (
                 <div className="mt-4 grid grid-cols-3 gap-4">
                   {newImages.map((file, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={`Preview ${index + 1}`}
-                        className="w-full h-32 object-cover rounded-lg"
-                      />
+                    <div key={index} className="relative group bg-dark-900 rounded-lg overflow-hidden border border-dark-700">
+                      {file.type.startsWith('video/') ? (
+                        <div className="relative w-full h-32 bg-black">
+                          <video
+                            src={URL.createObjectURL(file)}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                            <Upload className="w-8 h-8 text-white" />
+                          </div>
+                          <span className="absolute bottom-2 left-2 bg-blue-500 text-white text-xs px-2 py-1 rounded flex items-center gap-1">
+                            <Play className="w-3 h-3" />
+                            Video
+                          </span>
+                        </div>
+                      ) : (
+                        <img
+                          src={URL.createObjectURL(file)}
+                          alt={`Preview ${index + 1}`}
+                          className="w-full h-32 object-cover"
+                        />
+                      )}
                       <button
                         type="button"
                         onClick={() => removeNewImage(index)}
-                        className="absolute top-2 right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
                       >
-                        <X className="w-4 h-4" />
+                        <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
                   ))}

@@ -1,19 +1,22 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
+import Autoplay from 'embla-carousel-autoplay';
 import { HouseImage } from '@/types';
 import Image from 'next/image';
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, Home as HomeIcon, Pause } from 'lucide-react';
 
 interface MediaCarouselProps {
   media: HouseImage[];
   className?: string;
+  autoplay?: boolean;
 }
 
-export default function MediaCarousel({ media, className = '' }: MediaCarouselProps) {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
+export default function MediaCarousel({ media, className = '', autoplay = true }: MediaCarouselProps) {
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true }, autoplay ? [Autoplay({ delay: 4000, stopOnInteraction: false })] : []);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(autoplay);
 
   const scrollPrev = useCallback(() => {
     if (emblaApi) emblaApi.scrollPrev();
@@ -23,26 +26,40 @@ export default function MediaCarousel({ media, className = '' }: MediaCarouselPr
     if (emblaApi) emblaApi.scrollNext();
   }, [emblaApi]);
 
+  const toggleAutoplay = useCallback(() => {
+    const autoplayPlugin = emblaApi?.plugins()?.autoplay;
+    if (!autoplayPlugin) return;
+    
+    const isCurrentlyPlaying = autoplayPlugin.isPlaying();
+    if (isCurrentlyPlaying) {
+      autoplayPlugin.stop();
+      setIsPlaying(false);
+    } else {
+      autoplayPlugin.play();
+      setIsPlaying(true);
+    }
+  }, [emblaApi]);
+
   const onSelect = useCallback(() => {
     if (!emblaApi) return;
     setSelectedIndex(emblaApi.selectedScrollSnap());
   }, [emblaApi]);
 
-  useState(() => {
+  useEffect(() => {
     if (!emblaApi) return;
     onSelect();
     emblaApi.on('select', onSelect);
     return () => {
       emblaApi.off('select', onSelect);
     };
-  });
+  }, [emblaApi, onSelect]);
 
   if (!media || media.length === 0) {
     return (
       <div className={`bg-dark-800 flex items-center justify-center ${className}`}>
-        <div className="text-center text-dark-500">
-          <Image src="/placeholder-house.png" alt="No media" width={200} height={200} className="mx-auto opacity-50" />
-          <p className="mt-4">No media available</p>
+        <div className="text-center text-dark-500 py-20">
+          <HomeIcon className="w-20 h-20 mx-auto mb-4 opacity-30" />
+          <p className="text-lg">No media available</p>
         </div>
       </div>
     );
@@ -129,9 +146,20 @@ export default function MediaCarousel({ media, className = '' }: MediaCarouselPr
         </div>
       )}
 
-      {/* Counter */}
-      <div className="absolute top-4 left-4 bg-black/70 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
-        {selectedIndex + 1} / {media.length}
+      {/* Counter & Controls */}
+      <div className="absolute top-4 left-4 flex items-center gap-2">
+        <div className="bg-black/70 text-white px-3 py-1 rounded-full text-sm backdrop-blur-sm">
+          {selectedIndex + 1} / {media.length}
+        </div>
+        {autoplay && media.length > 1 && (
+          <button
+            onClick={toggleAutoplay}
+            className="bg-black/70 hover:bg-black/80 text-white p-2 rounded-full backdrop-blur-sm transition-colors"
+            aria-label={isPlaying ? 'Pause autoplay' : 'Play autoplay'}
+          >
+            {isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          </button>
+        )}
       </div>
     </div>
   );

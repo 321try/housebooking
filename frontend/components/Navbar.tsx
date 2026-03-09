@@ -3,12 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/lib/auth-store';
-import { Home, Building2, User, LogOut, Menu, X } from 'lucide-react';
+import { useThemeStore } from '@/lib/theme-store';
+import { Home, Building2, User, LogOut, Menu, X, Sun, Moon } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 export default function Navbar() {
   const pathname = usePathname();
   const { user, isAuthenticated, logout, fetchCurrentUser } = useAuthStore();
+  const { theme, toggleTheme } = useThemeStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -26,13 +28,13 @@ export default function Navbar() {
   const isActive = (path: string) => pathname === path;
 
   return (
-    <nav className="bg-dark-900 border-b border-dark-700 sticky top-0 z-50">
+    <nav className="bg-white dark:bg-dark-900 border-b border-gray-200 dark:border-dark-700 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center space-x-2">
             <Home className="w-8 h-8 text-primary-500" />
-            <span className="text-xl font-bold text-white">HouseBooking</span>
+            <span className="text-xl font-bold text-gray-900 dark:text-white">HouseBooking</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -40,7 +42,9 @@ export default function Navbar() {
             <Link
               href="/houses"
               className={`transition-colors ${
-                isActive('/houses') ? 'text-primary-500' : 'text-dark-300 hover:text-white'
+                isActive('/houses') 
+                  ? 'text-primary-500' 
+                  : 'text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               Browse Houses
@@ -52,7 +56,9 @@ export default function Navbar() {
                   <Link
                     href="/admin"
                     className={`transition-colors ${
-                      pathname.startsWith('/admin') ? 'text-primary-500' : 'text-dark-300 hover:text-white'
+                      pathname.startsWith('/admin') 
+                        ? 'text-primary-500' 
+                        : 'text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     Admin Panel
@@ -61,7 +67,9 @@ export default function Navbar() {
                   <Link
                     href="/dashboard"
                     className={`transition-colors ${
-                      pathname.startsWith('/dashboard') ? 'text-primary-500' : 'text-dark-300 hover:text-white'
+                      pathname.startsWith('/dashboard') 
+                        ? 'text-primary-500' 
+                        : 'text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white'
                     }`}
                   >
                     My Bookings
@@ -69,13 +77,13 @@ export default function Navbar() {
                 )}
 
                 <div className="flex items-center space-x-4">
-                  <span className="text-dark-300">
+                  <span className="text-gray-600 dark:text-dark-300">
                     <User className="w-5 h-5 inline mr-1" />
                     {user?.name}
                   </span>
                   <button
                     onClick={handleLogout}
-                    className="text-dark-300 hover:text-white transition-colors flex items-center"
+                    className="text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors flex items-center"
                   >
                     <LogOut className="w-5 h-5 mr-1" />
                     Logout
@@ -84,7 +92,7 @@ export default function Navbar() {
               </>
             ) : (
               <div className="flex items-center space-x-4">
-                <Link href="/login" className="text-dark-300 hover:text-white transition-colors">
+                <Link href="/login" className="text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors">
                   Login
                 </Link>
                 <Link href="/register" className="btn-primary">
@@ -94,10 +102,19 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="hidden md:block text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors p-2"
+            aria-label="Toggle theme"
+          >
+            {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+          </button>
+
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden text-dark-300 hover:text-white"
+            className="md:hidden text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white"
           >
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -108,18 +125,36 @@ export default function Navbar() {
           <div className="md:hidden py-4 space-y-4">
             <Link
               href="/houses"
-              className="block text-dark-300 hover:text-white transition-colors"
+              className="block text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
               onClick={() => setIsMobileMenuOpen(false)}
             >
               Browse Houses
             </Link>
+
+            {/* Theme Toggle in Mobile */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center space-x-2 text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
+            >
+              {theme === 'dark' ? (
+                <>
+                  <Sun className="w-5 h-5" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-5 h-5" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
 
             {isAuthenticated ? (
               <>
                 {user?.role === 'ADMIN' ? (
                   <Link
                     href="/admin"
-                    className="block text-dark-300 hover:text-white transition-colors"
+                    className="block text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Admin Panel
@@ -127,18 +162,18 @@ export default function Navbar() {
                 ) : (
                   <Link
                     href="/dashboard"
-                    className="block text-dark-300 hover:text-white transition-colors"
+                    className="block text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     My Bookings
                   </Link>
                 )}
 
-                <div className="pt-4 border-t border-dark-700">
-                  <p className="text-dark-300 mb-2">{user?.name}</p>
+                <div className="pt-4 border-t border-gray-200 dark:border-dark-700">
+                  <p className="text-gray-600 dark:text-dark-300 mb-2">{user?.name}</p>
                   <button
                     onClick={handleLogout}
-                    className="text-dark-300 hover:text-white transition-colors"
+                    className="text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                   >
                     Logout
                   </button>
@@ -148,7 +183,7 @@ export default function Navbar() {
               <>
                 <Link
                   href="/login"
-                  className="block text-dark-300 hover:text-white transition-colors"
+                  className="block text-gray-600 dark:text-dark-300 hover:text-gray-900 dark:hover:text-white transition-colors"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Login

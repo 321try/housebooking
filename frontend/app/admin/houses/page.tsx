@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { houseApi } from '@/lib/api';
 import { House, HouseListItem } from '@/types';
 import { formatCurrency, getStatusBadgeColor } from '@/lib/utils';
-import { Plus, Edit, Trash2, MapPin, Home as HomeIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, MapPin, Home as HomeIcon, Eye } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminHousesPage() {
@@ -137,6 +137,15 @@ export default function AdminHousesPage() {
                         </div>
 
                         <div className="flex gap-2">
+                          <Link
+                            href={`/houses/${house.id}`}
+                            target="_blank"
+                            className="bg-dark-700 hover:bg-dark-600 text-white py-2 px-4 rounded-lg transition-colors inline-flex items-center"
+                            title="View public page"
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            View
+                          </Link>
                           <Link
                             href={`/admin/houses/${house.id}/edit`}
                             className="btn-secondary py-2 px-4 inline-flex items-center"
