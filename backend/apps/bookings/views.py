@@ -4,7 +4,8 @@ from .models import Booking
 from .serializers import (
     BookingSerializer,
     BookingListSerializer,
-    BookingStatusSerializer
+    BookingStatusSerializer,
+    BookingRescheduleSerializer
 )
 from apps.users.permissions import IsAdminUser, IsOwnerOrAdmin
 
@@ -69,3 +70,21 @@ class BookingStatusUpdateView(generics.UpdateAPIView):
     
     def perform_update(self, serializer):
         serializer.save(managed_by=self.request.user)
+
+
+class BookingRescheduleView(generics.UpdateAPIView):
+    """API endpoint for rescheduling booking dates"""
+    
+    queryset = Booking.objects.all()
+    serializer_class = BookingRescheduleSerializer
+    permission_classes = [IsAdminUser]
+    
+    def perform_update(self, serializer):
+        instance = serializer.save(managed_by=self.request.user)
+        # Add a note about the reschedule
+        reschedule_note = f"\n[Rescheduled by admin on {instance.updated_at.strftime('%b %d, %Y %H:%M')}]"
+        if instance.notes:
+            instance.notes += reschedule_note
+        else:
+            instance.notes = reschedule_note.strip()
+        instance.save()

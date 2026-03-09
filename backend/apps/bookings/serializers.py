@@ -75,3 +75,22 @@ class BookingStatusSerializer(serializers.ModelSerializer):
     class Meta:
         model = Booking
         fields = ['status', 'notes']
+
+
+class BookingRescheduleSerializer(serializers.ModelSerializer):
+    """Serializer for rescheduling booking dates"""
+    
+    class Meta:
+        model = Booking
+        fields = ['check_in', 'check_out', 'notes']
+    
+    def validate(self, data):
+        """Validate rescheduled dates"""
+        check_in = data.get('check_in', self.instance.check_in if self.instance else None)
+        check_out = data.get('check_out', self.instance.check_out if self.instance else None)
+        
+        if check_in and check_out:
+            if check_in >= check_out:
+                raise serializers.ValidationError("Check-out date must be after check-in date")
+        
+        return data

@@ -21,7 +21,10 @@ import {
   Waves,
   ArrowLeft,
   Calendar,
-  DollarSign
+  DollarSign,
+  Info,
+  User,
+  Phone
 } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, getStatusBadgeColor } from '@/lib/utils';
@@ -39,6 +42,8 @@ export default function HouseDetailPage() {
   const [checkIn, setCheckIn] = useState('');
   const [checkOut, setCheckOut] = useState('');
   const [notes, setNotes] = useState('');
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
 
   useEffect(() => {
     fetchHouse();
@@ -69,6 +74,12 @@ export default function HouseDetailPage() {
       return;
     }
 
+    // Check for guest details if user is not logged in
+    if (!user && (!guestName || !guestPhone)) {
+      toast.error('Please provide your name and phone number');
+      return;
+    }
+
     try {
       setBookingLoading(true);
       const bookingData = {
@@ -76,6 +87,11 @@ export default function HouseDetailPage() {
         check_in: new Date(checkIn).toISOString(),
         check_out: new Date(checkOut).toISOString(),
         notes: notes || undefined,
+        // Include guest details for non-logged-in users
+        ...((!user) && {
+          guest_name: guestName,
+          guest_phone: guestPhone,
+        }),
       };
 
       console.log('Creating booking with data:', bookingData);
@@ -83,7 +99,19 @@ export default function HouseDetailPage() {
       
       await bookingApi.create(bookingData);
       toast.success('Booking created successfully!');
-      router.push('/dashboard/bookings');
+      
+      // Clear form
+      setCheckIn('');
+      setCheckOut('');
+      setNotes('');
+      setGuestName('');
+      setGuestPhone('');
+      
+      // Navigate based on user status
+      if (user) {
+        router.push('/dashboard/bookings');
+      }
+      // For guests, success message already shown above
     } catch (err: any) {
       console.error('Booking error:', err);
       console.error('Error response:', err.response);
@@ -351,17 +379,103 @@ export default function HouseDetailPage() {
                       </p>
                     </div>
                   ) : (
-                    <div className="text-center">
-                      <p className="text-dark-400 mb-4">Sign in to book this property</p>
-                      <Link href="/login" className="btn-primary w-full inline-block">
-                        Sign In to Book
-                      </Link>
-                      <p className="text-sm text-dark-500 mt-3">
-                        Don't have an account?{' '}
-                        <Link href="/register" className="text-primary-500 hover:text-primary-400">
-                          Register
+                    <div>
+                      <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                        <p className="text-sm text-blue-400 flex items-start gap-2">
+                          <Info className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                          <span>
+                            Book as a guest! Please provide your contact details for booking confirmation. All communication will be through the phone number provided.
+                          </span>
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            <User className="w-4 h-4 inline mr-2" />
+                            Full Name *
+                          </label>
+                          <input
+                            type="text"
+                            value={guestName}
+                            onChange={(e) => setGuestName(e.target.value)}
+                            className="input-field"
+                            placeholder="Enter your full name"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            <Phone className="w-4 h-4 inline mr-2" />
+                            Phone Number *
+                          </label>
+                          <input
+                            type="tel"
+                            value={guestPhone}
+                            onChange={(e) => setGuestPhone(e.target.value)}
+                            className="input-field"
+                            placeholder="+1234567890"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            <Calendar className="w-4 h-4 inline mr-2" />
+                            Check-in Date
+                          </label>
+                          <input
+                            type="date"
+                            value={checkIn}
+                            onChange={(e) => setCheckIn(e.target.value)}
+                            className="input-field"
+                            min={new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            <Calendar className="w-4 h-4 inline mr-2" />
+                            Check-out Date
+                          </label>
+                          <input
+                            type="date"
+                            value={checkOut}
+                            onChange={(e) => setCheckOut(e.target.value)}
+                            className="input-field"
+                            min={checkIn || new Date().toISOString().split('T')[0]}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-2">
+                            Notes (Optional)
+                          </label>
+                          <textarea
+                            value={notes}
+                            onChange={(e) => setNotes(e.target.value)}
+                            className="input-field"
+                            rows={3}
+                            placeholder="Any special requests..."
+                          />
+                        </div>
+                        <button 
+                          onClick={handleBooking}
+                          disabled={bookingLoading || !checkIn || !checkOut || !guestName || !guestPhone}
+                          className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {bookingLoading ? 'Processing...' : 'Book Now'}
+                        </button>
+                        <p className="text-xs text-dark-500 text-center">
+                          You won't be charged yet
+                        </p>
+                      </div>
+
+                      <div className="mt-6 pt-6 border-t border-dark-700 text-center">
+                        <p className="text-sm text-dark-400 mb-3">
+                          Have an account? Sign in for faster booking
+                        </p>
+                        <Link href="/login" className="text-primary-500 hover:text-primary-400 text-sm">
+                          Sign In
                         </Link>
-                      </p>
+                      </div>
                     </div>
                   )}
                 </>
@@ -377,7 +491,7 @@ export default function HouseDetailPage() {
               )}
 
               {/* Price Breakdown */}
-              {house.status === 'AVAILABLE' && user && (
+              {house.status === 'AVAILABLE' && (checkIn && checkOut) && (
                 <div className="mt-6 pt-6 border-t border-dark-700">
                   <h3 className="font-semibold mb-3">Price Details</h3>
                   <div className="space-y-2 text-sm">

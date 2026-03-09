@@ -109,6 +109,11 @@ export interface Booking {
   updated_at: string;
 }
 
+export interface BookingDetail extends Booking {
+  // This includes all Booking fields plus the expanded house_detail
+  house_detail: HouseListItem;
+}
+
 export interface BookingListItem {
   id: number;
   booking_code: string;

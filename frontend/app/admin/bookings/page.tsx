@@ -115,9 +115,18 @@ export default function AdminBookingsPage() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Booking Management
-          </h1>
+          <div className="flex items-center justify-between mb-2">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              Booking Management
+            </h1>
+            <button
+              onClick={() => router.push('/admin/bookings/new')}
+              className="btn-primary"
+            >
+              <Calendar className="w-4 h-4" />
+              New Booking
+            </button>
+          </div>
           <p className="text-gray-600 dark:text-dark-300">
             Manage all customer bookings and reservations
           </p>
